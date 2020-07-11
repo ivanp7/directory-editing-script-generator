@@ -63,6 +63,41 @@ from 'original' directory. Symbolic link's value -- original resource,
 its location and name -- target placement. Multiple links to a single file
 means copying; files/directories with no links pointing at them shall be deleted.
 
+Patterns are easily created using the following POSIX-compliant shell script, 
+which replaces a symbolic link to a directory with a directory containing 
+symbolic links to content files/subdirectories:
+
+```
+#!/bin/sh
+
+LINK="$1"
+
+if [ ! -L "$LINK" ]
+then
+    echo "'$LINK' is not a symlink."
+    exit 1
+fi
+
+LINK_PATH="$(readlink "$LINK")"
+
+if [ ! -d "$LINK_PATH" ]
+then
+    exit 0
+fi
+
+DIR="$(dirname "$LINK")"
+NAME="$(basename "$LINK")"
+
+cd "$DIR"
+rm "$NAME"
+mkdir "$NAME"
+
+case "$LINK_PATH" in
+    /*) find "$LINK_PATH/" -mindepth 1 -maxdepth 1 | xargs -I {} ln -s "{}" "$NAME/" ;;
+    *) find "$LINK_PATH/" -mindepth 1 -maxdepth 1 | xargs -I {} ln -s "../{}" "$NAME/" ;;
+esac
+```
+
 ## Installation
 
 1. Install [Roswell](https://github.com/roswell/roswell) to your system.
